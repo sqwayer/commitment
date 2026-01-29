@@ -5,8 +5,17 @@ entropy_from_logit(L) = begin
     return -(L * (p - 1) + log(p))
 end
 
+dkl_from_logit(Lp, Lq) = begin
+    p = logistic(Lp)
+    return p * (Lp - Lq) + Lq - Lp + log(1 + exp(-Lq)) - log(1 + exp(-Lp))
+end
+
 squeeze_mean(X; dims) = dropdims(mean(X, dims=dims), dims=dims)
 
-nice_plot(X; kw...) = plot(X; linewidth=3, palette = cgrad(:acton, size(X, 2)+1, rev=true, categorical=true)[2:size(X,2)+1], ylims=(0.5,1), label="", size=(500, 500), dpi = 300, kw...)
 
+""" Log-likelihood functions """
+normal_llh(μ, σ², x) = logpdf(Normal(μ, σ²), x) 
+vonMiseslogpdf(d, x) = (d.κ * (cos(x - d.μ) - 1)) - log(twoπ * d.I0κx)
+vonmises_llh(μ, κ, x) = vonMiseslogpdf(VonMises(μ, κ), x)
+bernoulli_llh(μ, κ, x) = logpdf(BernoulliLogit(κ * μ), x)
 
