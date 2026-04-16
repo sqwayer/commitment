@@ -2,6 +2,14 @@ using Distributions, StatsFuns, StatsPlots, ProgressMeter
 include("../../environments/forest_task.jl")
 include("../plot_funs.jl")
 
+""" 
+Simulations of the Forest task used on figure 2
+An agent has to find the way out of a forest, by gathering evidence on each time step. 
+The agent starts in a "dark zone" that is completely non informative and has to escape it to collect useful evidence. 
+The further from starting point, the stronger the evidence
+At each step, the agent choses between two directions, samples evidence and updates its beliefs
+"""
+
 ## Simulation of the forest environment
 nIter = 10_000
 nSteps = 50
@@ -73,16 +81,10 @@ extCommit = dropdims(Dbelief, dims=3)
 extCommitBelief_pl = nice_plot(extCommit;title="Commitment model", xlabel="Steps", ylabel="Belief", ylims = (0,1), label = reshape(darkZoneRadius,1,:), legend_title="Radius of uninformative zone", legend_position= :topright)
 
 ## Uncertainty
-unc = selectdim(confidence[2:end,:,:], 2, 2)
-unc = hcat(unc, Dconfidence1[2:end,2,:], Dconfidence2[2:end,2,:])
+unc = selectdim(confidence[1:end,:,:], 2, 2)
+unc = hcat(unc, Dconfidence1[1:end,2,:], Dconfidence2[1:end,2,:])
 uncertainty_pl = nice_plot(unc; xlabel="Steps", ylabel="Uncertainty", ylims = (0.2,0.8), label = "", palette=ColorScheme(vcat(PTols[3], range(PTols[1], PTols[4], length=3))), linewidth=5, labelfontsize=14, tickfontsize=14)
 
-
-# withCommit = selectdim(belief, 3, 2)
-# withCommitBelief_pl = nice_plot(withCommit;title="Commitment model", xlabel="Steps", ylabel="Belief", ylims = (0,1), label = reshape(darkZoneRadius,1,:), legend_title="Radius of uninformative zone", legend_position= :topright)
-
-# extCommit = dropdims(Dbelief, dims=3)
-# extCommitBelief_pl = nice_plot(extCommit;title="Commitment model", xlabel="Steps", ylabel="Belief", ylims = (0,1), label = reshape(darkZoneRadius,1,:), legend_title="Radius of uninformative zone", legend_position= :topright)
 ## Proba commitment
 lowCommit = squeeze_mean(commited[:,:,2]; dims=2)
 extCommit1 = squeeze_mean(Dcommited1[:,:,1]; dims=2)

@@ -10,7 +10,7 @@ function leaky_noisy_update(logitp, ν, ξ)
 end
 
 function p_commit(U, τ, θ)  
-    return U^θ / (U^θ + τ^θ * (1 - U)^θ)
+    return U^θ / (U^θ + τ^θ * (1 - U)^θ) 
 end
 
 function action_selection(a1, a2, β)
@@ -33,10 +33,6 @@ function full_model!(latent, obs; μ₀, μ₁, σ², λ, ξ)
 
     # Belief updating 
     newresp, a1, a2 = observer_update(a1, a2, llr + ξ * randn(), λ)
-
-    # Variability updating  
-    #Δ *= 1 - α
-    #Δ += α * dkl_from_logit(newresp, resp) / log(2)#(logistic(newresp) - logistic(resp))^2  #
 
     # Update latent variables
     latent[:Δ] = Δ
@@ -95,6 +91,7 @@ function initialize_full_model(a0)
 end
 
 """ Partial model """
+
 function partial_model!(latent, obs; μ, ρ, σ², λ, ξ)
     # Unpack latent variables
     ai = latent[:ai]
@@ -118,7 +115,7 @@ end
 function action_model!(latent, mdl; β, τ, θ)
     currentcommit = latent[:commited]
     if mdl == :full 
-            latent[:selectLP] = logit(1 - cdf(Beta(β * latent[:a1], β * latent[:a2]), 0.5)) #β * log(latent[:a1]) - log(latent[:a2])
+            latent[:selectLP] = logit(1 - cdf(Beta(β * latent[:a1], β * latent[:a2]), 0.5)) 
             latent[:commited] = false
             latent[:p̂] = latent[:a1] / (latent[:a1] + latent[:a2]) 
             latent[:Uf] = 2 / (latent[:a1] + latent[:a2]) # Foreground model uncertainty
@@ -168,31 +165,15 @@ function partial_belief_model_action!(latent, β, τ, θ)
             sgn = sign(latent[:selectLP]) # Direction of commitment
             if sgn > 0 || (sgn == 0 && rand() <= 0.5)
                 # Commit to cat. 1
-                latent[:ai] = latent[:a1]#0.5*(latent[:a1] + latent[:a2])
+                latent[:ai] = latent[:a1]
                 latent[:commitTo] = 1
 
             else
                 # Commit to cat. 2
-                latent[:ai] = latent[:a2]#0.5*(latent[:a2] + latent[:a1])
+                latent[:ai] = latent[:a2]
                 latent[:commitTo] = 2
                 
             end
-
-        # else # Already commited 
-        #     pChg = p_commit(latent[:Uf], τ, θ) # Check uncertainty of the partial observer
-        #     if rand() < pChg 
-        #         if latent[:commitTo] == 1
-        #             # Commit to cat. 2
-        #             latent[:ai] = latent[:a2]
-        #             latent[:commitTo] = 2
-
-        #         else
-        #             # Commit to cat. 1
-        #             latent[:ai] = latent[:a1]
-        #             latent[:commitTo] = 1
-
-        #         end
-        #     end
         end
 
         if latent[:commitTo] == 1
