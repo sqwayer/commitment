@@ -1,5 +1,4 @@
-include("utils.jl")
-include("observer.jl")
+include("../model/commitment_bayes.jl")
 
 
 function seq_task_simu(nSteps, nIter; epLength = nSteps, lesionInt = [0], process = VonMises, σ² = 1.0, s = 1.0, ξ = 0.0, a0 = 2, λ = 0.0, λ₂ = 0.0, θ = 1.0, τ = 1.0, β = 1.0, ρ = 1/2/pi, κ = 1.0, mdl = [:full])
@@ -65,24 +64,32 @@ function seq_task!(belief, firstpass, staycommit, confidence, latent; mdl = :ful
     μ = pi/2
     μ₀ = pi/2
     μ₁ = -pi/2  
+    cat = 1
+    if isa(s, Real)
+        s = fill(s, 2)
+    end
+
+    if isa(σ², Real)
+        σ² = fill(σ², 2)
+    end
+
     for t = 1:nSteps
 
-        obs = process == Bernoulli ? rand(BernoulliLogit(s * μ)) : rand(process(μ, s))#rand(Normal(μ, s))
+        obs = process == Bernoulli ? rand(BernoulliLogit(s[1] * μ)) : rand(process(μ, s[cat]))
+
+        # Check leak 
+        lam = in(t, lesionInt) ? λ₂ : λ
 
         # Update full model
-        staycommit[t] = latent[:commited]
-        if in(t, lesionInt)
-            full_model!(latent, obs; μ₀ = μ₀, μ₁ = μ₁, σ² = σ², λ = λ₂, ξ = ξ)
-        else
-            full_model!(latent, obs; μ₀ = μ₀, μ₁ = μ₁, σ² = σ², λ = λ, ξ = ξ)
-        end
+        staycommit[t] = latent[:commited]# ? (-1)^latent[:commitTo] : 0.0
+        full_model!(latent, obs; μ₀ = μ₀, μ₁ = μ₁, σ² = σ², λ = lam, ξ = ξ)
 
         # Update foreground model 
         if mdl == :partial && latent[:commited]
             if latent[:commitTo] == 1
-                partial_model!(latent, obs; μ = μ₀, ρ = ρ, σ² = σ², λ = 0.0, ξ = ξ)
+                partial_model!(latent, obs; μ = μ₀, ρ = ρ, σ² = σ²[1], λ = lam, ξ = ξ)
             elseif latent[:commitTo] == 2
-                partial_model!(latent, obs; μ = μ₁, ρ = ρ, σ² = σ², λ = 0.0, ξ = ξ)
+                partial_model!(latent, obs; μ = μ₁, ρ = ρ, σ² = σ²[2], λ = lam, ξ = ξ)
             else
                 error("commit not set")
             end
@@ -98,6 +105,7 @@ function seq_task!(belief, firstpass, staycommit, confidence, latent; mdl = :ful
         # Reversal
         if mod(t, epLength) == 0
             μ *= -1
+            cat = mod(cat, 2)+1
         end
 
         # Check first pass (decision to stop in beads task)

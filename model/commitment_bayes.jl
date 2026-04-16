@@ -1,4 +1,5 @@
 include("observer.jl")
+include("utils.jl")
 
 function leaky_update(logitp, ν)
     return logit(logistic(logitp) * (1-ν) + ν / 2)
@@ -28,7 +29,7 @@ function full_model!(latent, obs; μ₀, μ₁, σ², λ, ξ)
     lpfun = latent[:lpfun]
 
     # Log-likelihood ratio 
-    llr = lpfun(μ₀, σ², obs) - lpfun(μ₁, σ², obs)
+    llr = lpfun(μ₀, σ²[1], obs) - lpfun(μ₁, σ²[2], obs)
 
     # Belief updating 
     newresp, a1, a2 = observer_update(a1, a2, llr + ξ * randn(), λ)
@@ -167,16 +168,31 @@ function partial_belief_model_action!(latent, β, τ, θ)
             sgn = sign(latent[:selectLP]) # Direction of commitment
             if sgn > 0 || (sgn == 0 && rand() <= 0.5)
                 # Commit to cat. 1
-                latent[:ai] = latent[:a1]
+                latent[:ai] = latent[:a1]#0.5*(latent[:a1] + latent[:a2])
                 latent[:commitTo] = 1
 
             else
                 # Commit to cat. 2
-                latent[:ai] = latent[:a2]
+                latent[:ai] = latent[:a2]#0.5*(latent[:a2] + latent[:a1])
                 latent[:commitTo] = 2
                 
             end
 
+        # else # Already commited 
+        #     pChg = p_commit(latent[:Uf], τ, θ) # Check uncertainty of the partial observer
+        #     if rand() < pChg 
+        #         if latent[:commitTo] == 1
+        #             # Commit to cat. 2
+        #             latent[:ai] = latent[:a2]
+        #             latent[:commitTo] = 2
+
+        #         else
+        #             # Commit to cat. 1
+        #             latent[:ai] = latent[:a1]
+        #             latent[:commitTo] = 1
+
+        #         end
+        #     end
         end
 
         if latent[:commitTo] == 1
@@ -196,6 +212,7 @@ function partial_belief_model_action!(latent, β, τ, θ)
     else
         latent[:selectLP] = action_selection(latent[:a1], latent[:a2], β)
         latent[:Uf] = 2 / (latent[:a1] + latent[:a2])
+        latent[:p̂] = latent[:a1] / (latent[:a1] + latent[:a2]) 
     end
 
 end

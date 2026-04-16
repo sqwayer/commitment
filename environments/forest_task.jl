@@ -1,5 +1,4 @@
-include("utils.jl")
-include("commitment_bayes.jl")
+include("../model/commitment_bayes.jl")
 
 function forest_task_simu(nSteps, nIter; darkZoneRadius = 0.5, stepsize = 0.1, σ² = 1.0, s = 1.0, ξ = 0.0, a0 = 2, λ = 0.0, θ = 1.0, τ = 1.0, β = 1.0, ρ = 1/2/pi, mdl = [:full])
 
@@ -58,6 +57,10 @@ function forest_task!(belief, firstpass, staycommit, confidence, latent, trace; 
     xalt = 0.0
     neverpassed = true
 
+    if isa(σ², Real)
+        σ² = fill(σ², 2)
+    end
+
     for t = 1:nSteps   
         if !ismissing(trace)
             trace[t] = x 
@@ -81,9 +84,9 @@ function forest_task!(belief, firstpass, staycommit, confidence, latent, trace; 
         if mdl == :partial && latent[:commited]
             sgn = sign(latent[:selectLP]) # Get the commited belief
             if sgn > 0.0
-                partial_model!(latent, obs; μ = μ₀, ρ = ρ, σ² = σ², λ = 0.0, ξ = ξ)
+                partial_model!(latent, obs; μ = μ₀, ρ = ρ, σ² = σ²[1], λ = λ, ξ = ξ)
             elseif sgn < 0.0
-                partial_model!(latent, obs; μ = μ₁, ρ = ρ, σ² = σ², λ = 0.0, ξ = ξ)
+                partial_model!(latent, obs; μ = μ₁, ρ = ρ, σ² = σ²[2], λ = λ, ξ = ξ)
             else
                 error("sgn = 0")
             end
