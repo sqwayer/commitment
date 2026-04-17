@@ -46,10 +46,11 @@ end
 plot!(repeat([1, 0], inner=epLength-100, outer=Int(floor(nSteps / epLength/ 2))), color=:grey, linestyle=:dash, label="", ylims=(-0.05, 1.05))
 
 ## Plot uncertainty
-plot(uncertainty[100:500,:, 3]; linewidth=5, palette=PTolsGrad2(2), ylabel="Uncertainy", xlabel="# Observations", ylims=(0.09, 0.22),yticks=0.1:0.02:0.2, label="", labelfontsize=14, tickfontsize=14, size=(500, 500), dpi=300, background=:transparent)
+idx = 100:500
+plot(uncertainty[idx,:, 3]; linewidth=5, palette=PTolsGrad2(2), ylabel="Uncertainy", xlabel="# Observations", ylims=(0.09, 0.22),yticks=0.1:0.02:0.2, label="", labelfontsize=14, tickfontsize=14, size=(500, 500), dpi=300, background=:transparent)
 
 for vid = [2, 1]
-    plot!(uncertainty[100:500,:, vid]; linewidth=5, palette=PTolsGrad2(2), ylabel="Uncertainy", xlabel="# Observations", label="", alpha=vid/3)
+    plot!(uncertainty[idx,:, vid]; linewidth=5, palette=PTolsGrad2(2), ylabel="Uncertainy", xlabel="# Observations", label="", alpha=vid/3)
 end
 plot!()
 
